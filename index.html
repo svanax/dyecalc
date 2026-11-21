@@ -63,8 +63,9 @@ summary{font-weight:600;padding:3px 0}
 .rc{display:inline-block;background:var(--chip);border-radius:6px;padding:0 8px;margin:2px 4px 2px 0;font-size:.9em;line-height:1.7}.vl{margin-right:10px}.r.sel{outline:2px solid var(--acc)}
 textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:13px/1.5 ui-monospace,Menlo,monospace}
 .sm{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 12px;font:inherit;cursor:pointer;float:right}.sm:hover{border-color:var(--acc);color:var(--acc)}
+.s-Loom{--c:#3f9a8a}
 </style></head><body>
-<aside><button class="ob big" data-o="">Order dye</button><input id="s" placeholder="Search items…" aria-label="Search items"><div class="tabs" id="tabs" role="tablist"></div><div id="list"></div></aside>
+<aside><div style="display:flex;gap:6px;margin-bottom:10px"><button class="ob big" data-o="" style="margin:0">Order</button><button class="ob big" data-cart id="cb" style="margin:0">Cart (0)</button></div><input id="s" placeholder="Search items…" aria-label="Search items"><div class="tabs" id="tabs" role="tablist"></div><div id="list"></div></aside>
 <main><div class="bc" id="bc"></div><div id="v"></div></main>
 <script>
 const D=`Dye|5L Water + Vermillion|5L Red Dye
@@ -145,7 +146,7 @@ Cooking Pot|1 Powdered Sphalerite|1 Powdered Zinc
 Cooking Pot|1 Powdered Zinc|1 Powdered Zinc Oxide
 Cooking Pot|1L Cobalt Sulfate + 1 Crushed Chromite + 1 Crushed Bauxite + 1 Powdered Sylvite|3 Cobalt Green
 Cooking Pot|1 Powdered Chromite|1 Viridian
-Cooking Pot|1 Litharge/1 Powdered Lead Oxide/1 White Lead|1 Massicot
+Cooking Pot|1 Powdered Lead Oxide/1 White Lead|1 Massicot
 Barrel|5L Water + 1 Crushed Alum|5L Diluted Alum
 Barrel|5L Water + 1 Crushed Cassiterite|5L Diluted Cassiterite
 Barrel|5L Water + 1 Crushed Chromite|5L Diluted Chromite
@@ -160,10 +161,43 @@ Barrel|0.5L Water + 1 Powdered Iron|1 Powdered Iron Oxide
 Crafting|1 Powdered Sphalerite + 2 Cadmium Yellow|3 Cadmium Red
 Crafting|1 Cadmium Yellow + 1 Viridian|1 Cadmium Green
 Crafting|2 Cadmium Red + 1 Powdered Sphalerite|3 Cadmium Orange
-Crafting|4 Cadmium Yellow + 5 Powdered Sphalerite|9 Cadmium Orange`;
+Crafting|4 Cadmium Yellow + 5 Powdered Sphalerite|9 Cadmium Orange
+Barrel|1 Oak Bark + 10L Weak Tannin|10L Strong Tannin
+Barrel|1 Tanning Bark + 1L Weak Tannin|1L Strong Tannin
+Pulverizer|1 Copper|1 Crushed Copper
+Grindstone|1 Crushed Copper|1 Powdered Copper
+Cooking Pot|3 Powdered Copper + 1L Sulfuric Acid|1L Diluted Copper Sulfate
+Cooking Pot|2L Sulfuric Acid + 2 Crushed Sphalerite|1L Zinc Sulfate
+Cooking Pot|3 Powdered Zinc Oxide + 1L Sulfuric Acid|1L Zinc Sulfate
+Loom|2 Flax Fiber|1 Plain Twine
+Barrel|0.5L Diluted Chromite/0.5L Diluted Cassiterite/0.5L Diluted Alum/0.25L Diluted Copper Sulfate/0.25L Iron Sulfate/0.25L Zinc Sulfate + 1 Plain Twine|1 Mordanted Twine
+Barrel|0.5L Blue Dye + 1 Mordanted Twine|1 Blue Twine
+Barrel|0.5L Woad Blue Dye + 1 Plain Twine/1 Mordanted Twine|1 Blue Twine
+Barrel|0.5L Woad Blue Dye + 1 Blue Twine|1 Dark Blue Twine
+Barrel|0.5L Strong Tannin + 1 Red Twine|1 Dark Red Twine
+Barrel|0.5L Black Dye + 1 Green Twine|1 Dark Green Twine
+Barrel|0.5L Brown Dye + 1 Mordanted Twine|1 Brown Twine
+Barrel|0.5L Strong Tannin + 1 Plain Twine/1 Mordanted Twine|1 Brown Twine
+Barrel|0.5L Strong Tannin + 1 Brown Twine|1 Dark Brown Twine
+Barrel|1L Iron Sulfate + 1 Leather|1 Dark Brown Leather
+Barrel|2L Strong Tannin + 1 Leather|1 Dark Brown Leather
+Crafting|4 Plain Twine + 1 Stick + 1 Horn Needle|1 Sewing Kit
+Crafting|1 Gold + 1 Plain Twine|1 Gilded Twine
+Crafting|1 Silver + 1 Plain Twine|1 Silvered Twine`;
 const P=t=>{t=t.trim();const m=t.match(/^(\d*\.?\d+L?)\s+(.+)$/);return m?{q:m[1],n:m[2]}:{q:"",n:t}};
 const R=[];
-D.split("\n").forEach(l=>{const[s,i,o]=l.split("|");
+const LC=["Red","Blue","Lime","Gray","Pink","Cyan","Teal","Mint","White","Brown","Green","Yellow","Orange","Purple","Sky Blue","Lavender","Black"],TC=["Red","Yellow","Purple","Green","Orange","Black","Gray","Pink","White"],CC=["Blue","Red","Yellow","Green","Purple","Pink","Orange","Brown","Gray","Black","White"],DK=["Blue","Brown","Green","Red"];
+const X=[...TC.map(c=>`Barrel|0.5L ${c} Dye + 1 Mordanted Twine|1 ${c} Twine`),
+...[...CC,...DK.map(c=>"Dark "+c),"Plain"].map(c=>`Crafting|4 ${c} Twine + 1 Stick|1 ${c} Cloth`),
+...CC.map(c=>`Crafting|Shears + Ruler + 1 Sewing Kit + 1 Plain Cloth + 1 ${c} Cloth|1 ${c} Checkered Cloth`),
+"Crafting|Shears + Ruler + 1 Sewing Kit + 2 Plain Cloth|1 Plain Checkered Cloth",
+...DK.map(c=>`Crafting|1 Sewing Kit + 4 ${c} Twine + 4 Dark ${c} Twine|1 Dark ${c} Checkered Cloth`),
+...LC.map(c=>`Barrel|2L ${c} Dye + 1 Leather|1 ${c} Leather`),
+...[...LC,"Dark Brown"].map(c=>`Crafting|2 ${c} Leather + 1 Stick + Knife + Ruler|1 ${c} Leather Bundle`)].join("\n");
+const TW=(D+"\n"+X).split("\n").filter(l=>l.startsWith("Barrel|")&&/Twine/.test(l)).map(l=>l.replace(/Twine/g,"Cloth")).join("\n");
+const AL=D+"\n"+X+"\n"+TW,WR=/(Mordanted|Dark Blue|Dark Red|Dark Green|Dark Brown|Blue|Red|Yellow|Purple|Green|Orange|Black|Gray|Pink|White|Brown) (Twine|Cloth)/g;
+const WL=AL.split("\n").filter(l=>/Twine|Cloth/.test(l)&&!/Checkered|Sewing|Gilded|Silvered|Leather/.test(l)).map(l=>l.replace(/Plain (Twine|Cloth)/g,"Wool $1").replace(WR,"$1 Wool $2")).join("\n");
+(AL+"\nLoom|2 Wool Fiber|1 Wool Twine\n"+WL).split("\n").forEach(l=>{const[s,i,o]=l.split("|");
  let combos=[[]];
  i.split(" + ").forEach(g=>{const alts=g.split("/").map(P);combos=combos.flatMap(c=>alts.map(a=>[...c,a]))});
  combos.forEach(c=>R.push({s,i:c,o:o.split(" + ").map(P)}))});
@@ -184,15 +218,15 @@ let hist=[],cur=null;
 function go(n,push=true){if(push&&cur)hist.push(cur);cur=n;
  const m=uniq(made[n]),u=uniq(used[n]);
  $("bc").innerHTML=(hist.length?`<button data-back>← back</button> · `:"")+hist.slice(-4).map(h=>`<button data-n="${h}">${h}</button>`).join(" › ")+(hist.length?" › ":"")+cur;
- $("v").innerHTML=`<h1>${sw(n)}${n}</h1>${isDye(n)?`<button class="ob" data-o="${n}">Order this dye</button>`:""}<div class="q">${made[n]?"Craftable":"Raw resource (no recipe produces it)"} · used in ${u.length} recipe${u.length==1?"":"s"}</div>
+ $("v").innerHTML=`<h1>${sw(n)}${n}</h1>${made[n]?`<button class="ob" data-o="${n}">Order this</button>`:""}<div class="q">${made[n]?"Craftable":"Raw resource (no recipe produces it)"} · used in ${u.length} recipe${u.length==1?"":"s"}</div>
  <h2>How to make it</h2>${m.length?m.map((r,i)=>recipe(r,isDye(n)?"Variant "+(i+1):"")).join(""):'<div class="q">Gathered or mined — start here.</div>'}
  <h2>What it's used for</h2>${u.length?u.map(recipe).join(""):'<div class="q">Not used as an ingredient in any listed recipe.</div>'}
  ${made[n]?`<h2>Full ingredient tree</h2>${tree(n,[],0)}`:""}`;
  if(!inTab(n,tab)){const t=TABS.findIndex((_,i)=>inTab(n,i));if(t>=0)tab=t}
  renderList();window.scrollTo(0,0)}
-const TABS=[["Dyes","Dye"],["Barrel Recipes","Barrel"],["Cooking Recipes","Cooking Pot"],["Crafting Recipes","Crafting"],["Crushing","Pulverizer"],["Grinding","Grindstone"],["Raw Resource",null]];
+const TABS=[["Dyes","Dye"],["Barrel Recipes","Barrel"],["Cooking Recipes","Cooking Pot"],["Crafting Recipes","Crafting"],["Loom Recipes","Loom"],["Thread",n=>/Twine$/.test(n)&&!/Wool/.test(n)],["Wool Thread",n=>/Wool Twine$/.test(n)],["Cloth",n=>/Cloth$/.test(n)&&!/Checkered|Wool/.test(n)],["Wool Cloth",n=>/Wool Cloth$/.test(n)],["Checkered Cloth",n=>/Checkered Cloth$/.test(n)],["Leather",n=>/.+ Leather$/.test(n)],["Leather Bundle",n=>/Leather Bundle$/.test(n)],["Crushing","Pulverizer"],["Grinding","Grindstone"],["Raw Resource",null]];
 let tab=0;
-const inTab=(n,t)=>TABS[t][1]?(made[n]||[]).some(k=>R[k].s==TABS[t][1]):!made[n];
+const inTab=(n,t)=>{const f=TABS[t][1];return typeof f=="function"?f(n):f?(made[n]||[]).some(k=>R[k].s==f):!made[n]};
 function renderList(){const q=$("s").value.toLowerCase();
  $("tabs").innerHTML=TABS.map((t,i)=>`<button role="tab" class="${i==tab?"on":""}" data-t="${i}">${t[0]}<span class="q">${names.filter(n=>inTab(n,i)).length}</span></button>`).join("");
  $("list").innerHTML=names.filter(n=>inTab(n,tab)&&n.toLowerCase().includes(q)).map(n=>`<button class="li${n==cur?" on":""}" data-n="${n}">${sw(n)}${n}</button>`).join("")}
@@ -201,7 +235,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-n],[data-b
 $("s").addEventListener("input",renderList);
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){tab=+b.dataset.t;renderList()}});
 const isDye=n=>(made[n]||[]).some(k=>R[k].s=="Dye"),DYES=names.filter(isDye);
-function needs(n,a,p){a=Math.round(a*1e6)/1e6;if(!made[n])return{[n]:a};if(p.includes(n))return null;
+const TOOLS=new Set(["Shears","Ruler","Knife"]);
+function needs(n,a,p){a=Math.round(a*1e6)/1e6;if(TOOLS.has(n))return{};if(!made[n])return{[n]:a};if(p.includes(n))return null;
  for(const r of uniq(made[n])){const q=parseFloat(r.o.find(x=>x.n==n).q)||1,b=Math.ceil(a/q),t={};let ok=true;
   for(const x of r.i){const s=needs(x.n,b*(parseFloat(x.q)||1),[...p,n]);if(!s){ok=false;break}for(const k in s)t[k]=(t[k]||0)+s[k]}
   if(ok)return t}
@@ -217,9 +252,33 @@ function ovar(){const n=$("od").value,a=Math.max(1,Math.ceil(+$("oa").value||1))
 function pick(i){const v=OV[i],tot=v.b*v.out;document.querySelectorAll("#ov .r").forEach((e,j)=>e.classList.toggle("sel",j==i));
  const txt=[`Dye order: ${v.a} L ${v.n} (Variant ${i+1})`,`Recipe: ${rt(v.r)}`,`Batches: ${v.b} × ${v.out} L = ${tot} L`+(tot>v.a?` (${tot-v.a} L surplus)`:""),"","Resources needed:",...Object.entries(v.t).map(([k,x])=>`- ${k}: ${fm(k,x)}`)].join("\n");
  $("oc").innerHTML=`<h2>Your order: Variant ${i+1}</h2><button class="sm" data-copy>Copy</button><textarea id="ot" readonly>${txt}</textarea>`;$("oc").scrollIntoView({behavior:"smooth",block:"nearest"})}
-document.addEventListener("click",e=>{const o=e.target.closest("[data-o]");if(o)return order(o.dataset.o||(cur&&isDye(cur)?cur:DYES[0]));
+document.addEventListener("click",e=>{const o=e.target.closest("[data-o]");if(o)return order(o.dataset.o||(cur&&made[cur]?cur:""));
  const s=e.target.closest("[data-sel]");if(s)return pick(+s.dataset.sel);
  const c=e.target.closest("[data-copy]");if(c){const t=$("ot");t.select();let ok=false;try{navigator.clipboard.writeText(t.value).catch(()=>{});ok=true}catch(_){}try{document.execCommand("copy");ok=true}catch(_){}c.textContent=ok?"Copied":"Press Ctrl+C";setTimeout(()=>c.textContent="Copy",1500)}});
 document.addEventListener("input",e=>{if(e.target.id=="oa"||e.target.id=="od")ovar()});
+const U=n=>/L$/.test(R[made[n][0]].o.find(o=>o.n==n).q)?" L":"",res=t=>Object.entries(t).map(([k,x])=>`<span class="rc">${k} <b>${fm(k,x)}</b></span>`).join("")||'<span class="q">no resources</span>';
+let SEL=0,lastO="",CART=[];try{CART=JSON.parse(localStorage.getItem("cart")||"[]")}catch(_){}
+const saveCart=()=>{try{localStorage.setItem("cart",JSON.stringify(CART))}catch(_){}$("cb").textContent="Cart ("+CART.length+")"};
+const calc=(n,a,r)=>{const out=parseFloat(r.o.find(x=>x.n==n).q)||1,b=Math.ceil(a/out),t={};r.i.forEach(x=>{const s=needs(x.n,b*(parseFloat(x.q)||1),[n]);if(s)for(const k in s)t[k]=(t[k]||0)+s[k]});return{r,out,b,t,n,a,u:U(n)}};
+const cls=r=>"s-"+r.s.replace(" ","");
+const otxt=(v,i)=>{const tot=v.b*v.out;return[`Order: ${v.a}${v.u} ${v.n} (Variant ${i+1})`,`Recipe: ${rt(v.r)}`,`Batches: ${v.b} × ${v.out}${v.u} = ${tot}${v.u}`+(tot>v.a?` (${tot-v.a}${v.u} surplus)`:""),"","Resources needed:",...Object.entries(v.t).map(([k,x])=>`- ${k}: ${fm(k,x)}`)].join("\n")};
+function order(n){n=n||lastO||DYES[0];lastO=n;cur=null;$("bc").innerHTML="";renderList();
+ const seen=new Set(),g=TABS.filter(t=>t[1]).map((t,i)=>{const L=names.filter(x=>made[x]&&!seen.has(x)&&inTab(x,i));L.forEach(x=>seen.add(x));return L.length?`<optgroup label="${t[0]}">${L.map(d=>`<option${d==n?" selected":""}>${d}</option>`).join("")}</optgroup>`:""}).join("");
+ $("v").innerHTML=`<h1>Order</h1><div class="q">Items are made in whole batches, so partial batches round up. Tools (shears, ruler, knife) are not counted; sewing kits are. Sub-ingredients use the first recipe that works.</div><div class="of"><label>Item<select id="od">${g}</select></label><label>Amount (L for liquids)<input id="oa" type="number" min="1" step="1" value="${oamt}"></label></div><div id="ov"></div><div id="oc"></div>`;ovar()}
+function ovar(){const n=$("od").value,a=Math.max(1,Math.ceil(+$("oa").value||1));oamt=a;lastO=n;$("oc").innerHTML="";
+ OV=uniq(made[n]).map(r=>calc(n,a,r));const u=U(n);
+ $("ov").innerHTML=`<h2>${a}${u} ${sw(n)}${n}: pick a variant</h2>`+OV.map((v,i)=>`<div class="r ${cls(v.r)}"><button class="sm" data-sel="${i}">Select</button><b class="vl">Variant ${i+1}</b><span class="q">${v.b} batch${v.b>1?"es":""} × ${v.out}${u} = ${v.b*v.out}${u} · ${rt(v.r)}</span><br>${res(v.t)}</div>`).join("")}
+function pick(i){SEL=i;document.querySelectorAll("#ov .r").forEach((e,j)=>e.classList.toggle("sel",j==i));
+ $("oc").innerHTML=`<h2>Your order: Variant ${i+1}</h2><button class="sm" data-copy>Copy</button><button class="sm" style="margin-right:6px" data-add>Add to cart</button><textarea id="ot" readonly>${otxt(OV[i],i)}</textarea>`;$("oc").scrollIntoView({behavior:"smooth",block:"nearest"})}
+function showCart(){cur=null;$("bc").innerHTML="";renderList();CART=CART.filter(c=>made[c.n]&&uniq(made[c.n])[c.i]);saveCart();
+ const L=CART.map(c=>calc(c.n,c.a,uniq(made[c.n])[c.i])),T={};L.forEach(v=>{for(const k in v.t)T[k]=(T[k]||0)+v.t[k]});
+ const txt=["Shopping list:",...L.map((v,j)=>`- ${v.a}${v.u} ${v.n} (Variant ${CART[j].i+1}, ${v.b} batch${v.b>1?"es":""})`),"","Total resources:",...Object.entries(T).sort().map(([k,x])=>`- ${k}: ${fm(k,x)}`)].join("\n");
+ $("v").innerHTML=`<h1>Cart</h1>`+(L.length?`<h2>Items</h2>`+L.map((v,j)=>`<div class="r ${cls(v.r)}"><button class="sm" data-rm="${j}">Remove</button><b>${v.a}${v.u} ${sw(v.n)}${v.n}</b> <span class="q">Variant ${CART[j].i+1} · ${rt(v.r)}</span></div>`).join("")+`<h2>Total resources</h2><div>${res(T)}</div><h2>Copy</h2><button class="sm" data-copy>Copy</button><textarea id="ot" readonly>${txt}</textarea><button class="sm" style="float:none;margin-top:8px" data-clear>Clear cart</button>`:`<div class="q">Your cart is empty. Use Order, pick a variant, then press Add to cart.</div>`)}
+document.addEventListener("click",e=>{const t=e.target,add=t.closest("[data-add]"),rm=t.closest("[data-rm]");
+ if(add){CART.push({n:OV[SEL].n,a:OV[SEL].a,i:SEL});saveCart();add.textContent="Added ✓"}
+ else if(t.closest("[data-cart]"))showCart();
+ else if(rm){CART.splice(+rm.dataset.rm,1);saveCart();showCart()}
+ else if(t.closest("[data-clear]")){CART=[];saveCart();showCart()}});
+saveCart();
 go("Red Dye",false);
 </script></body></html>
