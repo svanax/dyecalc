@@ -64,8 +64,9 @@ summary{font-weight:600;padding:3px 0}
 textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:13px/1.5 ui-monospace,Menlo,monospace}
 .sm{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 12px;font:inherit;cursor:pointer;float:right}.sm:hover{border-color:var(--acc);color:var(--acc)}
 .s-Loom{--c:#3f9a8a}
+.pl{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:.9em;cursor:pointer}.pl input{width:auto;padding:0;accent-color:var(--acc)}
 </style></head><body>
-<aside><div style="display:flex;gap:6px;margin-bottom:10px"><button class="ob big" data-o="" style="margin:0">Order</button><button class="ob big" data-cart id="cb" style="margin:0">Cart (0)</button></div><input id="s" placeholder="Search items…" aria-label="Search items"><div class="tabs" id="tabs" role="tablist"></div><div id="list"></div></aside>
+<aside><div style="display:flex;gap:6px;margin-bottom:10px"><button class="ob big" data-o="" style="margin:0">Order</button><button class="ob big" data-cart id="cb" style="margin:0">Cart (0)</button></div><label class="pl"><input type="checkbox" id="pz" checked> I have a pulverizer</label><input id="s" placeholder="Search items…" aria-label="Search items"><div class="tabs" id="tabs" role="tablist"></div><div id="list"></div></aside>
 <main><div class="bc" id="bc"></div><div id="v"></div></main>
 <script>
 const D=`Dye|5L Water + Vermillion|5L Red Dye
@@ -197,7 +198,21 @@ const X=[...TC.map(c=>`Barrel|0.5L ${c} Dye + 1 Mordanted Twine|1 ${c} Twine`),
 const TW=(D+"\n"+X).split("\n").filter(l=>l.startsWith("Barrel|")&&/Twine/.test(l)).map(l=>l.replace(/Twine/g,"Cloth")).join("\n");
 const AL=D+"\n"+X+"\n"+TW,WR=/(Mordanted|Dark Blue|Dark Red|Dark Green|Dark Brown|Blue|Red|Yellow|Purple|Green|Orange|Black|Gray|Pink|White|Brown) (Twine|Cloth)/g;
 const WL=AL.split("\n").filter(l=>/Twine|Cloth/.test(l)&&!/Checkered|Sewing|Gilded|Silvered|Leather/.test(l)).map(l=>l.replace(/Plain (Twine|Cloth)/g,"Wool $1").replace(WR,"$1 Wool $2")).join("\n");
-(AL+"\nLoom|2 Wool Fiber|1 Wool Twine\n"+WL).split("\n").forEach(l=>{const[s,i,o]=l.split("|");
+const NEW=`Dye|1L Water + 1 Dry Grass|1L Green Dye
+Barrel|10L Water + 1 Soda|10L Washing Soda
+Barrel|2L Washing Soda + 1 Plain Cloth|1 Mordanted Cloth
+Barrel|2L Washing Soda + 1 Wool Cloth|1 Mordanted Wool Cloth
+Barrel|0.25L Washing Soda + 1 Wool Twine|1 Mordanted Wool Twine
+Barrel|2L Water + 1 Salt|2L Brine
+Barrel|2L Water + 1 Saltpeter|2L Saltpeter Brine
+Barrel|1L Water + 1 Lime|1L Lime Water
+Cooking Pot|2L Brine + 1L Lime Water + 1 Saltpeter|1 Soda
+Cooking Pot|2L Salty Water + 1L Lime Water + 1 Saltpeter|1 Soda
+Cooking Pot|1L Saltpeter Brine + 1 Salt + 1L Lime Water|1 Soda
+Crafting|3 Alum + Hammer|1 Crushed Alum
+Crafting|3 Cinnabar + Hammer|1 Crushed Cinnabar
+Crafting|4 Lapis Lazuli + Hammer|1 Crushed Lapis Lazuli`;
+(AL+"\nLoom|2 Wool Fiber|1 Wool Twine\n"+WL+"\n"+NEW).split("\n").forEach(l=>{const[s,i,o]=l.split("|");
  let combos=[[]];
  i.split(" + ").forEach(g=>{const alts=g.split("/").map(P);combos=combos.flatMap(c=>alts.map(a=>[...c,a]))});
  combos.forEach(c=>R.push({s,i:c,o:o.split(" + ").map(P)}))});
@@ -212,21 +227,21 @@ const uniq=a=>[...new Set((a||[]).map(k=>JSON.stringify(R[k])))].map(s=>R.find(r
 function tree(n,path,d){
  if(!made[n])return`<div class="t">${chip({n,q:""})} <span class="q">raw resource</span></div>`;
  if(path.includes(n)||d>7)return`<div class="t">${n} <span class="q">(loop / depth limit)</span></div>`;
- const rs=uniq(made[n]);
+ const rs=uniq(made[n]).filter(okR);if(!rs.length)return`<div class="t">${n} <span class="q">unavailable</span></div>`;
  return`<details${d<2?" open":""}><summary>${sw(n)}${n} <span class="q">${rs.length>1?rs.length+" ways":rs[0].s}</span></summary>${rs.map(r=>`<div class="t s-${r.s.replace(" ","")}"><span class="st">${r.s}</span>${r.i.map(x=>tree(x.n,[...path,n],d+1)).join("")}</div>`).join("")}</details>`}
 let hist=[],cur=null;
 function go(n,push=true){if(push&&cur)hist.push(cur);cur=n;
- const m=uniq(made[n]),u=uniq(used[n]);
+ const m0=uniq(made[n]),m=m0.filter(okR),u=uniq(used[n]).filter(okR);
  $("bc").innerHTML=(hist.length?`<button data-back>← back</button> · `:"")+hist.slice(-4).map(h=>`<button data-n="${h}">${h}</button>`).join(" › ")+(hist.length?" › ":"")+cur;
  $("v").innerHTML=`<h1>${sw(n)}${n}</h1>${made[n]?`<button class="ob" data-o="${n}">Order this</button>`:""}<div class="q">${made[n]?"Craftable":"Raw resource (no recipe produces it)"} · used in ${u.length} recipe${u.length==1?"":"s"}</div>
- <h2>How to make it</h2>${m.length?m.map((r,i)=>recipe(r,isDye(n)?"Variant "+(i+1):"")).join(""):'<div class="q">Gathered or mined — start here.</div>'}
+ <h2>How to make it</h2>${m.length?m0.map((r,i)=>okR(r)?recipe(r,isDye(n)?"Variant "+(i+1):""):"").join(""):'<div class="q">Gathered or mined — start here.</div>'}
  <h2>What it's used for</h2>${u.length?u.map(recipe).join(""):'<div class="q">Not used as an ingredient in any listed recipe.</div>'}
  ${made[n]?`<h2>Full ingredient tree</h2>${tree(n,[],0)}`:""}`;
  if(!inTab(n,tab)){const t=TABS.findIndex((_,i)=>inTab(n,i));if(t>=0)tab=t}
  renderList();window.scrollTo(0,0)}
 const TABS=[["Dyes","Dye"],["Barrel Recipes","Barrel"],["Cooking Recipes","Cooking Pot"],["Crafting Recipes","Crafting"],["Loom Recipes","Loom"],["Thread",n=>/Twine$/.test(n)&&!/Wool/.test(n)],["Wool Thread",n=>/Wool Twine$/.test(n)],["Cloth",n=>/Cloth$/.test(n)&&!/Checkered|Wool/.test(n)],["Wool Cloth",n=>/Wool Cloth$/.test(n)],["Checkered Cloth",n=>/Checkered Cloth$/.test(n)],["Leather",n=>/.+ Leather$/.test(n)],["Leather Bundle",n=>/Leather Bundle$/.test(n)],["Crushing","Pulverizer"],["Grinding","Grindstone"],["Raw Resource",null]];
 let tab=0;
-const inTab=(n,t)=>{const f=TABS[t][1];return typeof f=="function"?f(n):f?(made[n]||[]).some(k=>R[k].s==f):!made[n]};
+const inTab=(n,t)=>{const f=TABS[t][1];if(made[n]&&!AV.has(n))return false;return typeof f=="function"?f(n):f?(made[n]||[]).some(k=>R[k].s==f&&okR(R[k])):!made[n]};
 function renderList(){const q=$("s").value.toLowerCase();
  $("tabs").innerHTML=TABS.map((t,i)=>`<button role="tab" class="${i==tab?"on":""}" data-t="${i}">${t[0]}<span class="q">${names.filter(n=>inTab(n,i)).length}</span></button>`).join("");
  $("list").innerHTML=names.filter(n=>inTab(n,tab)&&n.toLowerCase().includes(q)).map(n=>`<button class="li${n==cur?" on":""}" data-n="${n}">${sw(n)}${n}</button>`).join("")}
@@ -235,9 +250,9 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-n],[data-b
 $("s").addEventListener("input",renderList);
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){tab=+b.dataset.t;renderList()}});
 const isDye=n=>(made[n]||[]).some(k=>R[k].s=="Dye"),DYES=names.filter(isDye);
-const TOOLS=new Set(["Shears","Ruler","Knife"]);
+const TOOLS=new Set(["Shears","Ruler","Knife","Hammer"]);
 function needs(n,a,p){a=Math.round(a*1e6)/1e6;if(TOOLS.has(n))return{};if(!made[n])return{[n]:a};if(p.includes(n))return null;
- for(const r of uniq(made[n])){const q=parseFloat(r.o.find(x=>x.n==n).q)||1,b=Math.ceil(a/q),t={};let ok=true;
+ for(const r of uniq(made[n]).filter(okR)){const q=parseFloat(r.o.find(x=>x.n==n).q)||1,b=Math.ceil(a/q),t={};let ok=true;
   for(const x of r.i){const s=needs(x.n,b*(parseFloat(x.q)||1),[...p,n]);if(!s){ok=false;break}for(const k in s)t[k]=(t[k]||0)+s[k]}
   if(ok)return t}
  return null}
@@ -266,19 +281,24 @@ function order(n){n=n||lastO||DYES[0];lastO=n;cur=null;$("bc").innerHTML="";rend
  const seen=new Set(),g=TABS.filter(t=>t[1]).map((t,i)=>{const L=names.filter(x=>made[x]&&!seen.has(x)&&inTab(x,i));L.forEach(x=>seen.add(x));return L.length?`<optgroup label="${t[0]}">${L.map(d=>`<option${d==n?" selected":""}>${d}</option>`).join("")}</optgroup>`:""}).join("");
  $("v").innerHTML=`<h1>Order</h1><div class="q">Items are made in whole batches, so partial batches round up. Tools (shears, ruler, knife) are not counted; sewing kits are. Sub-ingredients use the first recipe that works.</div><div class="of"><label>Item<select id="od">${g}</select></label><label>Amount (L for liquids)<input id="oa" type="number" min="1" step="1" value="${oamt}"></label></div><div id="ov"></div><div id="oc"></div>`;ovar()}
 function ovar(){const n=$("od").value,a=Math.max(1,Math.ceil(+$("oa").value||1));oamt=a;lastO=n;$("oc").innerHTML="";
- OV=uniq(made[n]).map(r=>calc(n,a,r));const u=U(n);
- $("ov").innerHTML=`<h2>${a}${u} ${sw(n)}${n}: pick a variant</h2>`+OV.map((v,i)=>`<div class="r ${cls(v.r)}"><button class="sm" data-sel="${i}">Select</button><b class="vl">Variant ${i+1}</b><span class="q">${v.b} batch${v.b>1?"es":""} × ${v.out}${u} = ${v.b*v.out}${u} · ${rt(v.r)}</span><br>${res(v.t)}</div>`).join("")}
+ OV=uniq(made[n]).map((r,i)=>({...calc(n,a,r),idx:i})).filter(v=>okR(v.r));const u=U(n);
+ $("ov").innerHTML=`<h2>${a}${u} ${sw(n)}${n}: pick a variant</h2>`+OV.map((v,i)=>`<div class="r ${cls(v.r)}"><button class="sm" data-sel="${i}">Select</button><b class="vl">Variant ${v.idx+1}</b><span class="q">${v.b} batch${v.b>1?"es":""} × ${v.out}${u} = ${v.b*v.out}${u} · ${rt(v.r)}</span><br>${res(v.t)}</div>`).join("")}
 function pick(i){SEL=i;document.querySelectorAll("#ov .r").forEach((e,j)=>e.classList.toggle("sel",j==i));
- $("oc").innerHTML=`<h2>Your order: Variant ${i+1}</h2><button class="sm" data-copy>Copy</button><button class="sm" style="margin-right:6px" data-add>Add to cart</button><textarea id="ot" readonly>${otxt(OV[i],i)}</textarea>`;$("oc").scrollIntoView({behavior:"smooth",block:"nearest"})}
+ $("oc").innerHTML=`<h2>Your order: Variant ${OV[i].idx+1}</h2><button class="sm" data-copy>Copy</button><button class="sm" style="margin-right:6px" data-add>Add to cart</button><textarea id="ot" readonly>${otxt(OV[i],OV[i].idx)}</textarea>`;$("oc").scrollIntoView({behavior:"smooth",block:"nearest"})}
 function showCart(){cur=null;$("bc").innerHTML="";renderList();CART=CART.filter(c=>made[c.n]&&uniq(made[c.n])[c.i]);saveCart();
  const L=CART.map(c=>calc(c.n,c.a,uniq(made[c.n])[c.i])),T={};L.forEach(v=>{for(const k in v.t)T[k]=(T[k]||0)+v.t[k]});
  const txt=["Shopping list:",...L.map((v,j)=>`- ${v.a}${v.u} ${v.n} (Variant ${CART[j].i+1}, ${v.b} batch${v.b>1?"es":""})`),"","Total resources:",...Object.entries(T).sort().map(([k,x])=>`- ${k}: ${fm(k,x)}`)].join("\n");
  $("v").innerHTML=`<h1>Cart</h1>`+(L.length?`<h2>Items</h2>`+L.map((v,j)=>`<div class="r ${cls(v.r)}"><button class="sm" data-rm="${j}">Remove</button><b>${v.a}${v.u} ${sw(v.n)}${v.n}</b> <span class="q">Variant ${CART[j].i+1} · ${rt(v.r)}</span></div>`).join("")+`<h2>Total resources</h2><div>${res(T)}</div><h2>Copy</h2><button class="sm" data-copy>Copy</button><textarea id="ot" readonly>${txt}</textarea><button class="sm" style="float:none;margin-top:8px" data-clear>Clear cart</button>`:`<div class="q">Your cart is empty. Use Order, pick a variant, then press Add to cart.</div>`)}
 document.addEventListener("click",e=>{const t=e.target,add=t.closest("[data-add]"),rm=t.closest("[data-rm]");
- if(add){CART.push({n:OV[SEL].n,a:OV[SEL].a,i:SEL});saveCart();add.textContent="Added ✓"}
+ if(add){CART.push({n:OV[SEL].n,a:OV[SEL].a,i:OV[SEL].idx});saveCart();add.textContent="Added ✓"}
  else if(t.closest("[data-cart]"))showCart();
  else if(rm){CART.splice(+rm.dataset.rm,1);saveCart();showCart()}
  else if(t.closest("[data-clear]")){CART=[];saveCart();showCart()}});
 saveCart();
+let PUL=true,AV=new Set();
+const okR=r=>(PUL||r.s!="Pulverizer")&&r.i.every(x=>TOOLS.has(x.n)||!made[x.n]||AV.has(x.n));
+function recalc(){AV=new Set();let ch=true;while(ch){ch=false;for(const r of R)if(okR(r))r.o.forEach(x=>{if(!AV.has(x.n)){AV.add(x.n);ch=true}})}}
+recalc();
+$("pz").addEventListener("change",e=>{PUL=e.target.checked;recalc();renderList();if(cur)go(cur,false);else if($("od"))order($("od").value);else showCart()});
 go("Red Dye",false);
 </script></body></html>
